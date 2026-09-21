@@ -6,16 +6,25 @@ import {
   Image,
   Pressable,
 } from "react-native";
+
 import { useState, useEffect } from "react";
+
 import { getWordInfo } from "../services/wordsHandler";
+
 import Ionicons from "@expo/vector-icons/Ionicons";
+
 import { playSound } from "../services/soundHandler";
+
 import { COLORS } from "../constants";
 
-function AddWord() {
-  const [text, setText] = useState();
+function AddWord({ navigation }) {
+  const [text, setText] = useState("");
   const [wordData, setWordData] = useState();
-
+ useEffect(() => {
+  navigation.setOptions({
+    title: "Adding word",
+  });
+}, [navigation]);
   function onChangeText(text) {
     setWordData(undefined);
     setText(text);
@@ -25,12 +34,37 @@ function AddWord() {
     const delayDebounceFn = setTimeout(async () => {
       if (text) {
         const wordDataReceived = await getWordInfo(text);
+
         setWordData(wordDataReceived);
+
+        if (wordDataReceived?.word) {
+          navigation.setOptions({
+            title: `Adding word "${text}"`,
+          });
+        } else {
+          navigation.setOptions({
+            title: "Adding word",
+          });
+        }
+      } else {
+        navigation.setOptions({
+          title: "Adding word",
+        });
       }
     }, 1000);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [text]);
+  }, [text, navigation]);
+
+  function onAdd() {
+    if (!wordData?.word) {
+      return;
+    }
+
+    navigation.navigate("AllWords", {
+      wordData: wordData,
+    });
+  }
 
   return (
     <>
@@ -46,8 +80,10 @@ function AddWord() {
         }}
         source={require("../assets/add.png")}
       />
+
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Your word to search:</Text>
+
         <TextInput
           style={styles.input}
           onChangeText={onChangeText}
@@ -56,10 +92,19 @@ function AddWord() {
           placeholderTextColor={COLORS.grey600}
         />
       </View>
+
       {wordData && (
         <View style={styles.receivedInfoContainer}>
-          <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-            <Text style={styles.word}>{wordData.word}</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "baseline",
+            }}
+          >
+            <Text style={styles.word}>
+              {wordData.word}
+            </Text>
+
             {wordData.audio && (
               <Pressable
                 style={styles.playPressable}
@@ -72,13 +117,33 @@ function AddWord() {
                 />
               </Pressable>
             )}
-            <Text style={styles.phonetics}>{wordData.phonetics}</Text>
+
+            <Text style={styles.phonetics}>
+              {wordData.phonetics}
+            </Text>
           </View>
-          <Text style={styles.partOfSpeech}>{wordData.partOfSpeech}</Text>
-          <Text style={styles.meaning}>{wordData.meaning}</Text>
+
+          <Text style={styles.partOfSpeech}>
+            {wordData.partOfSpeech}
+          </Text>
+
+          <Text style={styles.meaning}>
+            {wordData.meaning}
+          </Text>
+
           {wordData.word && (
-            <Pressable style={styles.buttonContainer} onPress={onAdd}>
-              <Text style={{ fontSize: 24, color: COLORS.white }}>Add</Text>
+            <Pressable
+              style={styles.buttonContainer}
+              onPress={onAdd}
+            >
+              <Text
+                style={{
+                  fontSize: 24,
+                  color: COLORS.white,
+                }}
+              >
+                Add
+              </Text>
             </Pressable>
           )}
         </View>
@@ -97,40 +162,48 @@ const styles = StyleSheet.create({
     padding: 10,
     color: COLORS.black,
   },
+
   label: {
     fontSize: 12,
     color: COLORS.grey600,
     marginBottom: 4,
   },
+
   inputContainer: {
     marginHorizontal: 12,
   },
+
   receivedInfoContainer: {
     flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 10,
     fontSize: 32,
   },
+
   word: {
     fontSize: 32,
     paddingHorizontal: 10,
     color: COLORS.black,
   },
+
   phonetics: {
     fontSize: 20,
     paddingHorizontal: 10,
     color: COLORS.black,
   },
+
   partOfSpeech: {
     fontSize: 20,
     paddingHorizontal: 10,
     color: COLORS.black,
   },
+
   meaning: {
     fontSize: 16,
     padding: 13,
     color: COLORS.black,
   },
+
   buttonContainer: {
     borderRadius: 5,
     backgroundColor: COLORS.primary900,
@@ -138,17 +211,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  backPressable: {
-    position: "absolute",
-    width: 60,
-    borderRadius: 30,
-    aspectRatio: 1,
-    top: "2%",
-    left: "2%",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
+
   playPressable: {
     marginHorizontal: 20,
   },

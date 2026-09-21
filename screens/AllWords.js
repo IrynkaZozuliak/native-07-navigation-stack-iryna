@@ -6,34 +6,86 @@ import {
   Pressable,
   Text,
 } from "react-native";
+
 import { useState, useEffect } from "react";
+
 import Item from "../components/ListItem";
+
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { COLORS } from "../constants";
 
-function AllWords() {
+function AllWords({ navigation, route }) {
   const [myWords, setMyWords] = useState([]);
 
   function deleteWord(wordToDelete) {
-    setMyWords((prev) => prev.filter((item) => item.word != wordToDelete));
+    setMyWords((prev) =>
+      prev.filter((item) => item.word != wordToDelete)
+    );
+  }
+
+  useEffect(() => {
+    const wordData = route.params?.wordData;
+
+    if (!wordData?.word) {
+      return;
+    }
+
+    setMyWords((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.word === wordData.word
+      );
+
+      // Якщо слово вже є — оновлюємо його
+      if (existingIndex !== -1) {
+        const updatedWords = [...prev];
+
+        updatedWords[existingIndex] = wordData;
+
+        return updatedWords;
+      }
+
+      // Якщо слова ще немає — додаємо
+      return [...prev, wordData];
+    });
+
+    navigation.setParams({
+      wordData: undefined,
+    });
+  }, [route.params?.wordData, navigation]);
+
+  function openAddWord() {
+    navigation.navigate("AddWord");
   }
 
   return (
     <>
       <Pressable
         style={styles.addPressable}
+        onPress={openAddWord}
       >
-        <Ionicons name="add-outline" size={46} color={COLORS.white} />
+        <Ionicons
+          name="add-outline"
+          size={46}
+          color={COLORS.white}
+        />
       </Pressable>
+
       <View style={{ flex: 2 }}>
         <FlatList
           data={myWords}
-          renderItem={({ item }) => <Item item={item} onDelete={deleteWord} />}
+          renderItem={({ item }) => (
+           <Item
+  item={item}
+  onDelete={deleteWord}
+/>
+          )}
           keyExtractor={(item) => item.word}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.textEmpty}>No words yet</Text>
+              <Text style={styles.textEmpty}>
+                No words yet
+              </Text>
             </View>
           }
           ListHeaderComponent={
@@ -58,6 +110,7 @@ const styles = StyleSheet.create({
     marginTop: 40,
     zIndex: 10,
   },
+
   addPressable: {
     position: "absolute",
     width: 60,
@@ -71,6 +124,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 5,
   },
+
   image: {
     width: "45%",
     height: undefined,
@@ -78,6 +132,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     resizeMode: "contain",
   },
+
   empty: {
     height: 300,
     backgroundColor: COLORS.white,
@@ -85,6 +140,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     elevation: 5,
   },
+
   textEmpty: {
     fontSize: 40,
     color: COLORS.primary200,
