@@ -6,55 +6,68 @@ import {
   Image,
   Pressable,
 } from "react-native";
-
 import { useState, useEffect } from "react";
-
 import { getWordInfo } from "../services/wordsHandler";
-
 import Ionicons from "@expo/vector-icons/Ionicons";
-
 import { playSound } from "../services/soundHandler";
-
 import { COLORS } from "../constants";
 
 function AddWord({ navigation }) {
   const [text, setText] = useState("");
   const [wordData, setWordData] = useState();
- useEffect(() => {
-  navigation.setOptions({
-    title: "Adding word",
-  });
-}, [navigation]);
-  function onChangeText(text) {
-    setWordData(undefined);
-    setText(text);
-  }
 
+  // Початковий заголовок
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (text) {
-        const wordDataReceived = await getWordInfo(text);
+    navigation.setOptions({
+      title: "Adding word",
+    });
+  }, [navigation]);
 
-        setWordData(wordDataReceived);
+  // Пошук слова
+  useEffect(() => {
+    if (!text) {
+      setWordData(undefined);
 
-        if (wordDataReceived?.word) {
-          navigation.setOptions({
-            title: `Adding word "${text}"`,
-          });
-        } else {
-          navigation.setOptions({
-            title: "Adding word",
-          });
-        }
+      navigation.setOptions({
+        title: "Adding word",
+      });
+
+      return;
+    }
+
+    let cancelled = false;
+
+    async function searchWord() {
+      const wordDataReceived = await getWordInfo(text);
+
+      if (cancelled) {
+        return;
+      }
+
+      setWordData(wordDataReceived);
+
+      if (wordDataReceived?.word) {
+        navigation.setOptions({
+          title: `Adding word "${wordDataReceived.word}"`,
+        });
       } else {
         navigation.setOptions({
           title: "Adding word",
         });
       }
-    }, 1000);
+    }
 
-    return () => clearTimeout(delayDebounceFn);
+    searchWord();
+
+    return () => {
+      cancelled = true;
+    };
   }, [text, navigation]);
+
+  function onChangeText(value) {
+    setWordData(undefined);
+    setText(value);
+  }
 
   function onAdd() {
     if (!wordData?.word) {
@@ -62,22 +75,14 @@ function AddWord({ navigation }) {
     }
 
     navigation.navigate("AllWords", {
-      wordData: wordData,
+      wordData,
     });
   }
 
   return (
     <>
       <Image
-        style={{
-          marginTop: 100,
-          marginBottom: 30,
-          width: "20%",
-          height: undefined,
-          aspectRatio: 1,
-          alignSelf: "center",
-          resizeMode: "contain",
-        }}
+        style={styles.image}
         source={require("../assets/add.png")}
       />
 
@@ -95,15 +100,8 @@ function AddWord({ navigation }) {
 
       {wordData && (
         <View style={styles.receivedInfoContainer}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "baseline",
-            }}
-          >
-            <Text style={styles.word}>
-              {wordData.word}
-            </Text>
+          <View style={styles.wordRow}>
+            <Text style={styles.word}>{wordData.word}</Text>
 
             {wordData.audio && (
               <Pressable
@@ -119,7 +117,7 @@ function AddWord({ navigation }) {
             )}
 
             <Text style={styles.phonetics}>
-              {wordData.phonetics}
+              {wordData.phonetics || wordData.phonetic}
             </Text>
           </View>
 
@@ -136,14 +134,7 @@ function AddWord({ navigation }) {
               style={styles.buttonContainer}
               onPress={onAdd}
             >
-              <Text
-                style={{
-                  fontSize: 24,
-                  color: COLORS.white,
-                }}
-              >
-                Add
-              </Text>
+              <Text style={styles.buttonText}>Add</Text>
             </Pressable>
           )}
         </View>
@@ -153,67 +144,85 @@ function AddWord({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  input: {
-    height: 40,
-    fontSize: 18,
-    borderColor: COLORS.primary200,
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    color: COLORS.black,
-  },
-
-  label: {
-    fontSize: 12,
-    color: COLORS.grey600,
-    marginBottom: 4,
+  image: {
+    marginTop: 100,
+    marginBottom: 30,
+    width: "20%",
+    height: undefined,
+    aspectRatio: 1,
+    alignSelf: "center",
+    resizeMode: "contain",
   },
 
   inputContainer: {
-    marginHorizontal: 12,
+    paddingHorizontal: 20,
+  },
+
+  label: {
+    fontSize: 18,
+    marginBottom: 8,
+    color: COLORS.white,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.grey600,
+    padding: 10,
+    fontSize: 18,
+    color: COLORS.white,
   },
 
   receivedInfoContainer: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    fontSize: 32,
+    margin: 20,
+    padding: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary200,
+  },
+
+  wordRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
   },
 
   word: {
-    fontSize: 32,
-    paddingHorizontal: 10,
-    color: COLORS.black,
-  },
-
-  phonetics: {
-    fontSize: 20,
-    paddingHorizontal: 10,
-    color: COLORS.black,
-  },
-
-  partOfSpeech: {
-    fontSize: 20,
-    paddingHorizontal: 10,
-    color: COLORS.black,
-  },
-
-  meaning: {
-    fontSize: 16,
-    padding: 13,
-    color: COLORS.black,
-  },
-
-  buttonContainer: {
-    borderRadius: 5,
-    backgroundColor: COLORS.primary900,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 28,
+    fontWeight: "bold",
+    color: COLORS.white,
   },
 
   playPressable: {
-    marginHorizontal: 20,
+    marginLeft: 10,
+  },
+
+  phonetics: {
+    marginLeft: 10,
+    fontSize: 18,
+    color: COLORS.grey600,
+  },
+
+  partOfSpeech: {
+    marginTop: 10,
+    fontSize: 18,
+    color: COLORS.grey600,
+  },
+
+  meaning: {
+    marginTop: 10,
+    fontSize: 18,
+    color: COLORS.white,
+  },
+
+  buttonContainer: {
+    marginTop: 20,
+    padding: 10,
+    alignItems: "center",
+    backgroundColor: COLORS.primary900,
+    borderRadius: 8,
+  },
+
+  buttonText: {
+    fontSize: 24,
+    color: COLORS.white,
   },
 });
 
