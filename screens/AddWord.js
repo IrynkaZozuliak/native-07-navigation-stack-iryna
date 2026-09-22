@@ -23,26 +23,15 @@ function AddWord({ navigation }) {
     });
   }, [navigation]);
 
-  // Пошук слова
+  // Пошук слова після введення
   useEffect(() => {
     if (!text) {
       setWordData(undefined);
-
-      navigation.setOptions({
-        title: "Adding word",
-      });
-
       return;
     }
 
-    let cancelled = false;
-
-    async function searchWord() {
+    const delayDebounceFn = setTimeout(async () => {
       const wordDataReceived = await getWordInfo(text);
-
-      if (cancelled) {
-        return;
-      }
 
       setWordData(wordDataReceived);
 
@@ -55,13 +44,9 @@ function AddWord({ navigation }) {
           title: "Adding word",
         });
       }
-    }
+    }, 1000);
 
-    searchWord();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => clearTimeout(delayDebounceFn);
   }, [text, navigation]);
 
   function onChangeText(value) {
@@ -87,7 +72,9 @@ function AddWord({ navigation }) {
       />
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Your word to search:</Text>
+        <Text style={styles.label}>
+          Your word to search:
+        </Text>
 
         <TextInput
           style={styles.input}
@@ -101,7 +88,9 @@ function AddWord({ navigation }) {
       {wordData && (
         <View style={styles.receivedInfoContainer}>
           <View style={styles.wordRow}>
-            <Text style={styles.word}>{wordData.word}</Text>
+            <Text style={styles.word}>
+              {wordData.word}
+            </Text>
 
             {wordData.audio && (
               <Pressable
@@ -134,7 +123,9 @@ function AddWord({ navigation }) {
               style={styles.buttonContainer}
               onPress={onAdd}
             >
-              <Text style={styles.buttonText}>Add</Text>
+              <Text style={styles.buttonText}>
+                Add
+              </Text>
             </Pressable>
           )}
         </View>
