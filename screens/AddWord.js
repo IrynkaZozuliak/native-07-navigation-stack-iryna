@@ -26,7 +26,6 @@ function AddWord({ navigation }) {
   // Пошук слова після введення
   useEffect(() => {
     if (!text) {
-      setWordData(undefined);
       return;
     }
 
@@ -50,8 +49,16 @@ function AddWord({ navigation }) {
   }, [text, navigation]);
 
   function onChangeText(value) {
-    setWordData(undefined);
     setText(value);
+    setWordData(undefined);
+
+    // Якщо поле очищено — одразу повертаємо
+    // стандартний заголовок
+    if (!value) {
+      navigation.setOptions({
+        title: "Adding word",
+      });
+    }
   }
 
   function onAdd() {
@@ -85,7 +92,7 @@ function AddWord({ navigation }) {
         />
       </View>
 
-      {wordData && (
+      {wordData && wordData.word && (
         <View style={styles.receivedInfoContainer}>
           <View style={styles.wordRow}>
             <Text style={styles.word}>
@@ -110,24 +117,24 @@ function AddWord({ navigation }) {
             </Text>
           </View>
 
-          <Text style={styles.partOfSpeech}>
-            {wordData.partOfSpeech}
-          </Text>
+          {wordData.partOfSpeech && (
+            <Text style={styles.partOfSpeech}>
+              {wordData.partOfSpeech}
+            </Text>
+          )}
 
           <Text style={styles.meaning}>
             {wordData.meaning}
           </Text>
 
-          {wordData.word && (
-            <Pressable
-              style={styles.buttonContainer}
-              onPress={onAdd}
-            >
-              <Text style={styles.buttonText}>
-                Add
-              </Text>
-            </Pressable>
-          )}
+          <Pressable
+            style={styles.buttonContainer}
+            onPress={onAdd}
+          >
+            <Text style={styles.buttonText}>
+              Add
+            </Text>
+          </Pressable>
         </View>
       )}
     </>
