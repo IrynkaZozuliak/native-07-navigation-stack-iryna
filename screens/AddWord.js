@@ -6,7 +6,7 @@ import {
   Image,
   Pressable,
 } from "react-native";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { getWordInfo } from "../services/wordsHandler";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { playSound } from "../services/soundHandler";
@@ -16,10 +16,6 @@ function AddWord({ navigation }) {
   const [text, setText] = useState("");
   const [wordData, setWordData] = useState();
 
-  // Потрібно відрізняти перший запуск useEffect
-  // від очищення поля після введення слова.
-  const isFirstRender = useRef(true);
-
   // Початковий заголовок
   useEffect(() => {
     navigation.setOptions({
@@ -27,27 +23,13 @@ function AddWord({ navigation }) {
     });
   }, [navigation]);
 
-  // Реакція на зміну введеного слова
+  // Пошук слова після введення
   useEffect(() => {
-    // Перший запуск відбувається при монтуванні компонента.
-    // Тут нічого додатково не робимо, бо початковий
-    // заголовок уже встановлено вище.
     if (!text) {
-      setWordData(undefined);
-
-      if (!isFirstRender.current) {
-        navigation.setOptions({
-          title: "Adding word",
-        });
-      }
-
-      isFirstRender.current = false;
       return;
     }
 
-    // Викликаємо пошук без setTimeout.
-    // Це дозволяє коректно працювати з Jest fake timers.
-    async function searchWord() {
+    const delayDebounceFn = setTimeout(async () => {
       const wordDataReceived = await getWordInfo(text);
 
       setWordData(wordDataReceived);
@@ -61,14 +43,22 @@ function AddWord({ navigation }) {
           title: "Adding word",
         });
       }
-    }
+    }, 1000);
 
-    searchWord();
+    return () => clearTimeout(delayDebounceFn);
   }, [text, navigation]);
 
   function onChangeText(value) {
     setText(value);
     setWordData(undefined);
+
+    // Якщо поле очищено — одразу повертаємо
+    // стандартний заголовок
+    if (!value) {
+      navigation.setOptions({
+        title: "Adding word",
+      });
+    }
   }
 
   function onAdd() {
